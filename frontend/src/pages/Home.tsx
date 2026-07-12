@@ -10,12 +10,10 @@ import {
   TrendingUp,
   Shield,
   Sun,
-  Star,
   ArrowRight,
   BatteryCharging,
   Cpu,
-  Layers,
-  ChevronRight
+  Layers
 } from 'lucide-react';
 
 const features = [
@@ -140,7 +138,7 @@ const Home: React.FC = () => {
             { icon: Cpu, label: 'State-of-Health Diagnostic', sub: 'Real-time telemetry' },
             { icon: MapPin, label: 'Proximity GPS Range', sub: 'Autonomous route pools' },
             { icon: Shield, label: 'Escrow Vault Secure', sub: 'Total payout security' },
-          ].map((card, i) => {
+          ].map((card) => {
             const Icon = card.icon;
             return (
               <div

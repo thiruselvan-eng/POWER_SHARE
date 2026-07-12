@@ -13,14 +13,11 @@ import {
   X, 
   Search, 
   CheckCircle2,
-  SlidersHorizontal,
   Navigation,
   MapPin,
   FileText,
   Trash2,
-  LogOut,
-  Sliders,
-  DollarSign
+  LogOut
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import listingService from '../../services/listingService';
@@ -474,7 +471,7 @@ const BuyerDashboard: React.FC = () => {
                           type="text"
                           placeholder="Search listed cell models, local seller names, battery type..."
                           value={searchQuery}
-                          onChange={(e) => searchQuery(e.target.value)}
+                          onChange={(e) => setSearchQuery(e.target.value)}
                           className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-11 pr-4 py-3.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
                         />
                       </div>

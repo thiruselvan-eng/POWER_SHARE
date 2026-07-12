@@ -45,7 +45,19 @@ const OrderTrackingMap: React.FC<OrderTrackingMapProps> = ({
 
   // Connect to live WebSocket tracking channel
   useEffect(() => {
-    const wsUrl = `ws://localhost:8085/ws/tracking?orderId=${orderId}`;
+    const getWsUrl = () => {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      if (apiUrl) {
+        const base = apiUrl.replace(/\/api$/, '');
+        if (base.startsWith('https://')) {
+          return base.replace('https://', 'wss://') + `/ws/tracking?orderId=${orderId}`;
+        } else if (base.startsWith('http://')) {
+          return base.replace('http://', 'ws://') + `/ws/tracking?orderId=${orderId}`;
+        }
+      }
+      return `ws://localhost:8085/ws/tracking?orderId=${orderId}`;
+    };
+    const wsUrl = getWsUrl();
     let socket: WebSocket | null = new WebSocket(wsUrl);
 
     socket.onopen = () => {

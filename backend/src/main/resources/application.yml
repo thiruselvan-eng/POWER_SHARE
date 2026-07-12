@@ -31,6 +31,6 @@ app:
     prefix: "Bearer "
 
 server:
-  port: 8085
+  port: ${PORT:8085}
   error:
     include-message: always

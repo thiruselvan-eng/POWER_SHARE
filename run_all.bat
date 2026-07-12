@@ -12,7 +12,7 @@ echo.
 
 :: 2. Launch Spring Boot backend in a new terminal window
 echo [2/3] Starting Spring Boot backend on port 8085 (Separate Window)...
-start "PowerShare Backend (Port 8085)" cmd /k "cd /d %~dp0backend && .\mvnw.cmd spring-boot:run"
+start "PowerShare Backend (Port 8085)" cmd /k "cd /d %~dp0backend && set JAVA_HOME=C:\Program Files\Java\jdk-17&& set PATH=C:\Program Files\Java\jdk-17\bin;%%PATH%%&& .\mvnw.cmd spring-boot:run"
 echo.
 
 :: 3. Launch React frontend in a new terminal window
