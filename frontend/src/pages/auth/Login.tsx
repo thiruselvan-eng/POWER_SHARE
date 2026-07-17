@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, Zap, ShieldAlert } from 'lucide-react';
 import authService from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
-import { demoService } from '../../services/demoService';
+import { DEMO_CREDENTIALS } from '../../services/demoService';
 
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -29,16 +29,29 @@ const Login: React.FC = () => {
     resolver: zodResolver(loginSchema),
   });
 
-  const handleDemoSignIn = (role: 'ROLE_BUYER' | 'ROLE_SELLER' | 'ROLE_DELIVERY' | 'ROLE_ADMIN') => {
-    const user = demoService.signInDemoUser(role);
-    login(user);
-    const roleMap: Record<string, string> = {
-      ROLE_BUYER: '/buyer',
-      ROLE_SELLER: '/seller',
-      ROLE_DELIVERY: '/delivery',
-      ROLE_ADMIN: '/admin',
-    };
-    navigate(roleMap[role] || '/');
+  const handleDemoSignIn = async (role: 'ROLE_BUYER' | 'ROLE_SELLER' | 'ROLE_DELIVERY' | 'ROLE_ADMIN') => {
+    setIsLoading(true);
+    setServerError('');
+    try {
+      const credentials = DEMO_CREDENTIALS[role];
+      const user = await authService.login(credentials);
+      login(user);
+      const roleMap: Record<string, string> = {
+        ROLE_BUYER: '/buyer',
+        ROLE_SELLER: '/seller',
+        ROLE_DELIVERY: '/delivery',
+        ROLE_ADMIN: '/admin',
+      };
+      navigate(roleMap[role] || '/');
+    } catch (err: any) {
+      setServerError(
+        err.message ||
+        err.response?.data?.message ||
+        'Demo login failed. The server may be starting up — please retry in a few seconds.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const onSubmit = async (data: LoginForm) => {
@@ -188,35 +201,42 @@ const Login: React.FC = () => {
           <div className="mt-8 pt-6 border-t border-slate-800/80">
             <div className="flex justify-center mb-4">
               <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded-full">
-                Demo Mode (Development Only)
+                Demo Mode — uses real backend accounts
               </span>
             </div>
+            <p className="text-center text-slate-500 text-[10px] mb-3">
+              {isLoading ? 'Authenticating with backend…' : 'Click a role to log in instantly with pre-seeded demo credentials.'}
+            </p>
             <div className="grid grid-cols-2 gap-2.5">
               <button
                 type="button"
+                disabled={isLoading}
                 onClick={() => handleDemoSignIn('ROLE_BUYER')}
-                className="bg-[#050816] hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/35 text-slate-350 hover:text-emerald-400 text-xs font-semibold py-2.5 px-2 rounded-xl transition-all duration-200 active:scale-95 text-center flex items-center justify-center gap-1"
+                className="bg-[#050816] hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/35 text-slate-350 hover:text-emerald-400 text-xs font-semibold py-2.5 px-2 rounded-xl transition-all duration-200 active:scale-95 text-center flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 🚀 Demo Buyer
               </button>
               <button
                 type="button"
+                disabled={isLoading}
                 onClick={() => handleDemoSignIn('ROLE_SELLER')}
-                className="bg-[#050816] hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/35 text-slate-350 hover:text-emerald-400 text-xs font-semibold py-2.5 px-2 rounded-xl transition-all duration-200 active:scale-95 text-center flex items-center justify-center gap-1"
+                className="bg-[#050816] hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/35 text-slate-350 hover:text-emerald-400 text-xs font-semibold py-2.5 px-2 rounded-xl transition-all duration-200 active:scale-95 text-center flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 🚀 Demo Seller
               </button>
               <button
                 type="button"
+                disabled={isLoading}
                 onClick={() => handleDemoSignIn('ROLE_DELIVERY')}
-                className="bg-[#050816] hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/35 text-slate-350 hover:text-emerald-400 text-xs font-semibold py-2.5 px-2 rounded-xl transition-all duration-200 active:scale-95 text-center flex items-center justify-center gap-1"
+                className="bg-[#050816] hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/35 text-slate-350 hover:text-emerald-400 text-xs font-semibold py-2.5 px-2 rounded-xl transition-all duration-200 active:scale-95 text-center flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 🚀 Demo Delivery
               </button>
               <button
                 type="button"
+                disabled={isLoading}
                 onClick={() => handleDemoSignIn('ROLE_ADMIN')}
-                className="bg-[#050816] hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/35 text-slate-350 hover:text-emerald-400 text-xs font-semibold py-2.5 px-2 rounded-xl transition-all duration-200 active:scale-95 text-center flex items-center justify-center gap-1"
+                className="bg-[#050816] hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/35 text-slate-350 hover:text-emerald-400 text-xs font-semibold py-2.5 px-2 rounded-xl transition-all duration-200 active:scale-95 text-center flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 🚀 Demo Admin
               </button>

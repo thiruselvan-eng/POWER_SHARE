@@ -1,5 +1,5 @@
 // src/services/api.ts
-// Central Axios instance with JWT interceptors, timeout, and debug logging
+// Central Axios instance with JWT interceptors, timeout, and debug logging.
 
 import axios from 'axios';
 
@@ -23,7 +23,7 @@ const api = axios.create({
   withCredentials: true,
 });
 
-// ─── Request interceptor: attach JWT & log outgoing request details ──────────
+// ─── Request interceptor: attach real JWT & log outgoing request details ──────
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('ps_token');
