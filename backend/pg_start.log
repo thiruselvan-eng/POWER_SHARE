@@ -3,3 +3,30 @@
 2026-07-13 15:17:47.399 IST [1564] LOG:  listening on IPv4 address "127.0.0.1", port 5433
 2026-07-13 15:17:47.622 IST [11636] LOG:  database system was interrupted while in recovery at 2026-07-13 10:58:16 IST
 2026-07-13 15:17:47.622 IST [11636] HINT:  This probably means that some data is corrupted and you will have to use the last backup for recovery.
+2026-07-13 15:17:51.974 IST [11636] LOG:  database system was not properly shut down; automatic recovery in progress
+2026-07-13 15:17:52.023 IST [11636] LOG:  redo starts at 0/1A43800
+2026-07-13 15:17:52.023 IST [11636] LOG:  invalid record length at 0/1A43838: expected at least 24, got 0
+2026-07-13 15:17:52.023 IST [11636] LOG:  redo done at 0/1A43800 system usage: CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s
+2026-07-13 15:17:52.088 IST [25740] LOG:  checkpoint starting: end-of-recovery immediate wait
+2026-07-13 15:17:52.104 IST [25740] LOG:  checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.005 s, sync=0.003 s, total=0.018 s; sync files=2, longest=0.002 s, average=0.002 s; distance=0 kB, estimate=0 kB; lsn=0/1A43838, redo lsn=0/1A43838
+2026-07-13 15:17:52.276 IST [1564] LOG:  database system is ready to accept connections
+2026-07-13 15:25:18.900 IST [15576] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-07-13 15:25:18.902 IST [23092] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-07-13 15:25:18.904 IST [30792] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-07-13 15:25:18.906 IST [8472] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-07-13 15:25:18.907 IST [15228] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-07-13 15:25:18.907 IST [11900] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-07-13 15:25:18.906 IST [22524] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-07-13 15:25:18.907 IST [23332] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-07-13 15:25:18.908 IST [30192] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
+2026-07-13 15:25:18.909 IST [22936] LOG:  could not receive data from client: An existing connection was forcibly closed by the remote host.
+	
