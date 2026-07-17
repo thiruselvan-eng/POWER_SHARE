@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, Zap, ShieldAlert } from 'lucide-react';
 import authService from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
+import { demoService } from '../../services/demoService';
 
 const loginSchema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -27,6 +28,18 @@ const Login: React.FC = () => {
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
+
+  const handleDemoSignIn = (role: 'ROLE_BUYER' | 'ROLE_SELLER' | 'ROLE_DELIVERY' | 'ROLE_ADMIN') => {
+    const user = demoService.signInDemoUser(role);
+    login(user);
+    const roleMap: Record<string, string> = {
+      ROLE_BUYER: '/buyer',
+      ROLE_SELLER: '/seller',
+      ROLE_DELIVERY: '/delivery',
+      ROLE_ADMIN: '/admin',
+    };
+    navigate(roleMap[role] || '/');
+  };
 
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
@@ -164,12 +177,51 @@ const Login: React.FC = () => {
             <div className="flex-1 h-px bg-slate-800/80" />
           </div>
 
-          <p className="text-center text-slate-400 text-xs font-semibold">
+          <p className="text-center text-slate-400 text-xs font-semibold mb-6">
             Don't have an account?{' '}
             <Link to="/register" className="text-emerald-450 font-bold hover:text-emerald-400 transition-colors">
               Sign up free
             </Link>
           </p>
+
+          {/* Demo Mode Section */}
+          <div className="mt-8 pt-6 border-t border-slate-800/80">
+            <div className="flex justify-center mb-4">
+              <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded-full">
+                Demo Mode (Development Only)
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => handleDemoSignIn('ROLE_BUYER')}
+                className="bg-[#050816] hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/35 text-slate-350 hover:text-emerald-400 text-xs font-semibold py-2.5 px-2 rounded-xl transition-all duration-200 active:scale-95 text-center flex items-center justify-center gap-1"
+              >
+                🚀 Demo Buyer
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoSignIn('ROLE_SELLER')}
+                className="bg-[#050816] hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/35 text-slate-350 hover:text-emerald-400 text-xs font-semibold py-2.5 px-2 rounded-xl transition-all duration-200 active:scale-95 text-center flex items-center justify-center gap-1"
+              >
+                🚀 Demo Seller
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoSignIn('ROLE_DELIVERY')}
+                className="bg-[#050816] hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/35 text-slate-350 hover:text-emerald-400 text-xs font-semibold py-2.5 px-2 rounded-xl transition-all duration-200 active:scale-95 text-center flex items-center justify-center gap-1"
+              >
+                🚀 Demo Delivery
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoSignIn('ROLE_ADMIN')}
+                className="bg-[#050816] hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/35 text-slate-350 hover:text-emerald-400 text-xs font-semibold py-2.5 px-2 rounded-xl transition-all duration-200 active:scale-95 text-center flex items-center justify-center gap-1"
+              >
+                🚀 Demo Admin
+              </button>
+            </div>
+          </div>
         </div>
       </motion.div>
     </div>
