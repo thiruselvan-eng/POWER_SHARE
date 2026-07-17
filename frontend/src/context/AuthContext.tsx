@@ -1,7 +1,7 @@
 // src/context/AuthContext.tsx
 // Global auth state — user info, login/logout, role-aware access
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { AuthUser } from '../services/authService';
 
@@ -15,6 +15,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// All keys that must be wiped on logout (real JWT + demo session)
+const AUTH_KEYS = ['ps_token', 'ps_user'];
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,24 +30,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         setUser(JSON.parse(stored));
       } catch {
-        localStorage.removeItem('ps_user');
-        localStorage.removeItem('ps_token');
+        AUTH_KEYS.forEach(k => localStorage.removeItem(k));
       }
     }
     setIsLoading(false);
   }, []);
 
-  const login = (userData: AuthUser) => {
+  const login = useCallback((userData: AuthUser) => {
     localStorage.setItem('ps_token', userData.token);
     localStorage.setItem('ps_user', JSON.stringify(userData));
     setUser(userData);
-  };
+  }, []);
 
-  const logout = () => {
-    localStorage.removeItem('ps_token');
-    localStorage.removeItem('ps_user');
+  const logout = useCallback(() => {
+    // Wipe every auth key (covers both real JWT and demo tokens)
+    AUTH_KEYS.forEach(k => localStorage.removeItem(k));
     setUser(null);
-  };
+    // Hard-redirect to login so no protected route stays in history
+    window.location.replace('/login');
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, login, logout }}>

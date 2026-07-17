@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Zap, Plus, Trash2, Edit2, Battery as BatteryIcon, 
   BatteryCharging, AlertTriangle, ArrowUpRight, ArrowDownLeft, 
-  Wallet as WalletIcon, Globe, MapPin, Loader2, Sparkles, RefreshCw, X 
+  Wallet as WalletIcon, Globe, MapPin, Loader2, Sparkles, RefreshCw, X, LogOut
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import batteryService from '../../services/batteryService';
 import type { Battery, BatteryRequest } from '../../services/batteryService';
 import listingService from '../../services/listingService';
@@ -14,6 +15,7 @@ import orderService from '../../services/orderService';
 import type { Order } from '../../services/orderService';
 
 const SellerDashboard: React.FC = () => {
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'batteries' | 'listings' | 'orders' | 'wallet'>('overview');
   
   // Data States
@@ -311,6 +313,14 @@ const SellerDashboard: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-3">
+            {/* Logged-in user pill */}
+            <div className="hidden md:flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2">
+              <div className="w-6 h-6 rounded-full bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 flex items-center justify-center text-[10px] font-black">
+                {user?.fullName?.[0]?.toUpperCase() ?? 'S'}
+              </div>
+              <span className="text-xs text-slate-400 font-semibold truncate max-w-[120px]">{user?.fullName}</span>
+            </div>
+
             <button 
               onClick={fetchData} 
               disabled={loading}
@@ -318,6 +328,16 @@ const SellerDashboard: React.FC = () => {
             >
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
+
+            {/* Logout button */}
+            <button 
+              onClick={logout}
+              className="flex items-center gap-2 bg-slate-900 border border-slate-800 hover:border-rose-900 hover:bg-rose-500/5 hover:text-rose-400 text-slate-400 px-4 py-3 rounded-xl active:scale-95 transition-all text-xs font-semibold"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:block">Sign Out</span>
+            </button>
+
             <button 
               onClick={handleOpenAddBattery}
               className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 active:scale-95 font-bold text-[#020617] px-5 py-3 rounded-xl shadow-lg shadow-emerald-500/20 transition-all text-xs uppercase tracking-wide"
