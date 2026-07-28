@@ -1,27 +1,25 @@
 -- ============================================================
--- PowerShare Schema Migration
--- Aligns DB with redesigned entities from the marketplace overhaul
+-- PowerShare Schema Migration Script
+-- Run on PostgreSQL DB (Render / Supabase / Neon / Local)
 -- ============================================================
 
--- ============================================================
--- 1. batteries table
--- ============================================================
-
--- Add available_energy_kwh (replaces current_charge_kwh concept)
+-- 1. Add available_energy_kwh to batteries if missing
 ALTER TABLE batteries ADD COLUMN IF NOT EXISTS available_energy_kwh double precision;
 
--- Populate it from current_charge_kwh if not null, else capacity_kwh
+-- Populate available_energy_kwh from current_charge_kwh or capacity_kwh
 UPDATE batteries
 SET available_energy_kwh = COALESCE(current_charge_kwh, capacity_kwh)
 WHERE available_energy_kwh IS NULL;
 
--- Make it not null after populating
-ALTER TABLE batteries ALTER COLUMN available_energy_kwh SET NOT NULL;
+-- Drop legacy NOT NULL constraints on batteries
+ALTER TABLE batteries ALTER COLUMN current_charge_kwh DROP NOT NULL;
+ALTER TABLE batteries ALTER COLUMN voltage DROP NOT NULL;
+ALTER TABLE batteries ALTER COLUMN serial_number DROP NOT NULL;
 
--- Drop old check constraint on status (has wrong allowed values)
+-- Drop old status check constraint on batteries
 ALTER TABLE batteries DROP CONSTRAINT IF EXISTS batteries_status_check;
 
--- Add new status check constraint matching new BatteryStatus enum
+-- Add new status check constraint matching BatteryStatus enum
 ALTER TABLE batteries ADD CONSTRAINT batteries_status_check
     CHECK (status::text = ANY (ARRAY[
         'AVAILABLE',
@@ -31,23 +29,19 @@ ALTER TABLE batteries ADD CONSTRAINT batteries_status_check
         'SOLD_OUT'
     ]::text[]));
 
--- Update any old status values to valid new ones
+-- Update old status values
 UPDATE batteries SET status = 'AVAILABLE' WHERE status IN ('RENTED', 'IN_TRANSIT');
 
--- ============================================================
--- 2. orders table
--- ============================================================
+-- 2. Add missing columns and drop legacy constraints on energy_listings
+ALTER TABLE energy_listings ADD COLUMN IF NOT EXISTS delivery_available boolean NOT NULL DEFAULT false;
+ALTER TABLE energy_listings ADD COLUMN IF NOT EXISTS min_purchase_kwh double precision;
+ALTER TABLE energy_listings ALTER COLUMN delivery_radius_km DROP NOT NULL;
 
--- Drop the foreign key from delivery_assignments first (blocks drop table)
+-- 3. Drop delivery_assignments table & update orders status
 ALTER TABLE delivery_assignments DROP CONSTRAINT IF EXISTS fkal6lp5gq27djtgpdsn2907uq5;
-
--- Drop delivery_assignments table entirely
 DROP TABLE IF EXISTS delivery_assignments;
 
--- Drop old status check constraint on orders
 ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check;
-
--- Add new simplified status check
 ALTER TABLE orders ADD CONSTRAINT orders_status_check
     CHECK (status::text = ANY (ARRAY[
         'PENDING',
@@ -56,16 +50,10 @@ ALTER TABLE orders ADD CONSTRAINT orders_status_check
         'CANCELLED'
     ]::text[]));
 
--- Migrate old order statuses to valid new ones
-UPDATE orders SET status = 'ACCEPTED'   WHERE status = 'DISPATCHED';
-UPDATE orders SET status = 'COMPLETED'  WHERE status IN ('RETURN_PENDING', 'RETURNED');
+UPDATE orders SET status = 'ACCEPTED'  WHERE status = 'DISPATCHED';
+UPDATE orders SET status = 'COMPLETED' WHERE status IN ('RETURN_PENDING', 'RETURNED');
 
--- ============================================================
--- 3. Clean up users table ROLE_DELIVERY if any exist
--- ============================================================
+-- 4. Clean up legacy roles
 UPDATE users SET role = 'ROLE_BUYER' WHERE role = 'ROLE_DELIVERY';
 
--- ============================================================
--- Done
--- ============================================================
-SELECT 'Migration complete!' AS result;
+SELECT 'PowerShare DB Migration Completed Successfully!' AS status;
