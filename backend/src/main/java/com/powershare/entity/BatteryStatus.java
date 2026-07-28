@@ -2,7 +2,8 @@ package com.powershare.entity;
 
 public enum BatteryStatus {
     AVAILABLE,
-    RENTED,
+    CHARGING,
+    RESERVED,
     MAINTENANCE,
-    IN_TRANSIT
+    SOLD_OUT
 }

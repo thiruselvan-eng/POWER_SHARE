@@ -3,33 +3,39 @@ import api from './api';
 
 export interface OrderRequest {
   listingId: number;
-  deliveryAddress: string;
-  deliveryLatitude?: number;
-  deliveryLongitude?: number;
+  energyAmountKwh: number;
+  deliveryRequired: boolean;
+  buyerAddress?: string;
+  buyerLatitude?: number;
+  buyerLongitude?: number;
 }
 
 export interface Order {
   id: number;
   buyerId: number;
   buyerName: string;
-  buyerPhone?: string;
   sellerId: number;
   sellerName: string;
-  sellerPhone?: string;
+
   batteryId: number;
   batteryName: string;
+  batteryType: string;
   serialNumber: string;
-  listingId: number;
+
   pricePerKwh: number;
   energyAmountKwh: number;
   deliveryFee: number;
   totalAmount: number;
-  deliveryAddress: string;
-  deliveryLatitude?: number;
-  deliveryLongitude?: number;
-  sellerLatitude?: number;
-  sellerLongitude?: number;
-  status: 'PENDING' | 'ACCEPTED' | 'DISPATCHED' | 'COMPLETED' | 'RETURN_PENDING' | 'RETURNED' | 'CANCELLED';
+
+  deliveryRequired: boolean;
+  buyerAddress?: string;
+  buyerLatitude?: number;
+  buyerLongitude?: number;
+  sellerAddressSnapshot?: string;
+  sellerLatitudeSnapshot?: number;
+  sellerLongitudeSnapshot?: number;
+
+  status: 'PENDING' | 'ACCEPTED' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
   updatedAt?: string;
 }
@@ -52,11 +58,6 @@ const orderService = {
 
   cancelOrder: async (orderId: number): Promise<Order> => {
     const { data } = await api.patch<Order>(`/buyer/orders/${orderId}/cancel`);
-    return data;
-  },
-
-  requestReturn: async (orderId: number): Promise<Order> => {
-    const { data } = await api.patch<Order>(`/buyer/orders/${orderId}/status?status=RETURN_PENDING`);
     return data;
   },
 

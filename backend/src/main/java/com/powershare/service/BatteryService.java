@@ -44,13 +44,13 @@ public class BatteryService {
         Battery battery = Battery.builder()
                 .seller(seller)
                 .name(request.getName())
-                .capacityKwh(request.getCapacityKwh())
-                .voltage(request.getVoltage())
                 .batteryType(request.getBatteryType())
-                .currentChargeKwh(request.getCurrentChargeKwh())
+                .capacityKwh(request.getCapacityKwh())
+                .availableEnergyKwh(request.getAvailableEnergyKwh())
                 .healthRating(request.getHealthRating())
                 .serialNumber(request.getSerialNumber())
-                .status(BatteryStatus.AVAILABLE)
+                .imageUrl(request.getImageUrl())
+                .status(request.getStatus() != null ? request.getStatus() : BatteryStatus.AVAILABLE)
                 .build();
 
         batteryRepository.save(battery);
@@ -66,15 +66,16 @@ public class BatteryService {
             throw new BusinessException("Another battery with serial number " + request.getSerialNumber() + " already exists.");
         }
 
-        // Only allow editing charge / status if it's available or not active in a transaction
-        // But let's support general info edits
         battery.setName(request.getName());
-        battery.setCapacityKwh(request.getCapacityKwh());
-        battery.setVoltage(request.getVoltage());
         battery.setBatteryType(request.getBatteryType());
-        battery.setCurrentChargeKwh(request.getCurrentChargeKwh());
+        battery.setCapacityKwh(request.getCapacityKwh());
+        battery.setAvailableEnergyKwh(request.getAvailableEnergyKwh());
         battery.setHealthRating(request.getHealthRating());
         battery.setSerialNumber(request.getSerialNumber());
+        battery.setImageUrl(request.getImageUrl());
+        if (request.getStatus() != null) {
+            battery.setStatus(request.getStatus());
+        }
 
         batteryRepository.save(battery);
         return toResponse(battery);
@@ -86,10 +87,10 @@ public class BatteryService {
                 .orElseThrow(() -> new ResourceNotFoundException("Battery not found with ID " + batteryId + " for this seller."));
 
         if (battery.getStatus() != BatteryStatus.AVAILABLE) {
-            throw new BusinessException("Cannot delete battery because its current status is " + battery.getStatus() + ".");
+            throw new BusinessException("Cannot delete battery with status: " + battery.getStatus() + ". Only AVAILABLE batteries can be removed.");
         }
 
-        // If listing exists for this battery, delete it first to maintain referential integrity
+        // Remove associated listing first to maintain referential integrity
         energyListingRepository.findByBatteryId(batteryId)
                 .ifPresent(energyListingRepository::delete);
 
@@ -100,12 +101,12 @@ public class BatteryService {
         return BatteryResponse.builder()
                 .id(battery.getId())
                 .name(battery.getName())
-                .capacityKwh(battery.getCapacityKwh())
-                .voltage(battery.getVoltage())
                 .batteryType(battery.getBatteryType())
-                .currentChargeKwh(battery.getCurrentChargeKwh())
+                .capacityKwh(battery.getCapacityKwh())
+                .availableEnergyKwh(battery.getAvailableEnergyKwh())
                 .healthRating(battery.getHealthRating())
                 .serialNumber(battery.getSerialNumber())
+                .imageUrl(battery.getImageUrl())
                 .status(battery.getStatus())
                 .createdAt(battery.getCreatedAt())
                 .updatedAt(battery.getUpdatedAt())

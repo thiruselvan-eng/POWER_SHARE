@@ -4,7 +4,6 @@ import type { Order } from './orderService';
 export interface AdminStats {
   totalSellers: number;
   totalBuyers: number;
-  totalDeliveryPartners: number;
   totalUnverifiedUsers: number;
   totalEnergyTransferredKwh: number;
   totalFinancialThroughput: number;
@@ -16,7 +15,7 @@ export interface AdminUser {
   id: number;
   email: string;
   fullName: string;
-  role: 'ROLE_BUYER' | 'ROLE_SELLER' | 'ROLE_DELIVERY' | 'ROLE_ADMIN';
+  role: 'ROLE_BUYER' | 'ROLE_SELLER' | 'ROLE_ADMIN';
   verified: boolean;
   phone?: string;
   address?: string;

@@ -15,9 +15,9 @@
 	<description>PowerShare Backend Service</description>
 
 	<properties>
-		<java.version>17</java.version>
+		<java.version>21</java.version>
 		<jjwt.version>0.11.5</jjwt.version>
-		<lombok.version>1.18.36</lombok.version>
+		<lombok.version>1.18.38</lombok.version>
 	</properties>
 
 	<dependencies>
@@ -58,6 +58,13 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Cloudinary -->
+		<dependency>
+			<groupId>com.cloudinary</groupId>
+			<artifactId>cloudinary-http44</artifactId>
+			<version>1.38.0</version>
+		</dependency>
+
 		<!-- JWT (JJWT) -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
@@ -95,7 +102,21 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.13.0</version>
 				<configuration>
+					<source>21</source>
+					<target>21</target>
+					<compilerArgs>
+						<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
+						<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED</arg>
+						<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
+						<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED</arg>
+						<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED</arg>
+						<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED</arg>
+						<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED</arg>
+						<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED</arg>
+						<arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED</arg>
+					</compilerArgs>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.projectlombok</groupId>

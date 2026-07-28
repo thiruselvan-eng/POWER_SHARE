@@ -6,6 +6,7 @@ import com.powershare.dto.UserProfileResponse;
 import com.powershare.entity.*;
 import com.powershare.exception.ResourceNotFoundException;
 import com.powershare.repository.*;
+import com.powershare.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,9 +22,7 @@ public class AdminController {
 
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
-    private final BatteryRepository batteryRepository;
-    private final EnergyListingRepository energyListingRepository;
-    private final WalletRepository walletRepository;
+    private final OrderService orderService;
 
     @GetMapping("/stats")
     public ResponseEntity<AdminStatsResponse> getStats() {
@@ -32,21 +31,20 @@ public class AdminController {
 
         long totalSellers = allUsers.stream().filter(u -> u.getRole() == Role.ROLE_SELLER).count();
         long totalBuyers = allUsers.stream().filter(u -> u.getRole() == Role.ROLE_BUYER).count();
-        long totalDeliveryPartners = allUsers.stream().filter(u -> u.getRole() == Role.ROLE_DELIVERY).count();
         long totalUnverifiedUsers = allUsers.stream().filter(u -> !u.isVerified() && u.getRole() != Role.ROLE_ADMIN).count();
 
         double totalEnergyTransferredKwh = allOrders.stream()
-                .filter(o -> o.getStatus() == OrderStatus.COMPLETED || o.getStatus() == OrderStatus.RETURN_PENDING || o.getStatus() == OrderStatus.RETURNED)
+                .filter(o -> o.getStatus() == OrderStatus.COMPLETED)
                 .mapToDouble(Order::getEnergyAmountKwh)
                 .sum();
 
         BigDecimal totalFinancialThroughput = allOrders.stream()
-                .filter(o -> o.getStatus() == OrderStatus.COMPLETED || o.getStatus() == OrderStatus.RETURN_PENDING || o.getStatus() == OrderStatus.RETURNED)
+                .filter(o -> o.getStatus() == OrderStatus.COMPLETED)
                 .map(Order::getTotalAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal activeEscrowAmount = allOrders.stream()
-                .filter(o -> o.getStatus() == OrderStatus.PENDING || o.getStatus() == OrderStatus.ACCEPTED || o.getStatus() == OrderStatus.DISPATCHED || o.getStatus() == OrderStatus.RETURN_PENDING)
+                .filter(o -> o.getStatus() == OrderStatus.PENDING || o.getStatus() == OrderStatus.ACCEPTED)
                 .map(Order::getTotalAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -55,7 +53,6 @@ public class AdminController {
         AdminStatsResponse stats = AdminStatsResponse.builder()
                 .totalSellers(totalSellers)
                 .totalBuyers(totalBuyers)
-                .totalDeliveryPartners(totalDeliveryPartners)
                 .totalUnverifiedUsers(totalUnverifiedUsers)
                 .totalEnergyTransferredKwh(totalEnergyTransferredKwh)
                 .totalFinancialThroughput(totalFinancialThroughput)
@@ -88,7 +85,7 @@ public class AdminController {
     @GetMapping("/orders")
     public ResponseEntity<List<OrderResponse>> getOrders() {
         List<OrderResponse> orders = orderRepository.findAll().stream()
-                .map(this::mapToOrderResponse)
+                .map(orderService::toResponse)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(orders);
     }
@@ -105,34 +102,6 @@ public class AdminController {
                 .latitude(user.getLatitude())
                 .longitude(user.getLongitude())
                 .createdAt(user.getCreatedAt())
-                .build();
-    }
-
-    private OrderResponse mapToOrderResponse(Order order) {
-        return OrderResponse.builder()
-                .id(order.getId())
-                .buyerId(order.getBuyer().getId())
-                .buyerName(order.getBuyer().getFullName())
-                .buyerPhone(order.getBuyer().getPhone())
-                .sellerId(order.getSeller().getId())
-                .sellerName(order.getSeller().getFullName())
-                .sellerPhone(order.getSeller().getPhone())
-                .batteryId(order.getBattery().getId())
-                .batteryName(order.getBattery().getName())
-                .serialNumber(order.getBattery().getSerialNumber())
-                .listingId(order.getListing().getId())
-                .pricePerKwh(order.getPricePerKwh())
-                .energyAmountKwh(order.getEnergyAmountKwh())
-                .deliveryFee(order.getDeliveryFee())
-                .totalAmount(order.getTotalAmount())
-                .deliveryAddress(order.getDeliveryAddress())
-                .deliveryLatitude(order.getDeliveryLatitude())
-                .deliveryLongitude(order.getDeliveryLongitude())
-                .sellerLatitude(order.getSeller().getLatitude())
-                .sellerLongitude(order.getSeller().getLongitude())
-                .status(order.getStatus())
-                .createdAt(order.getCreatedAt())
-                .updatedAt(order.getUpdatedAt())
                 .build();
     }
 }

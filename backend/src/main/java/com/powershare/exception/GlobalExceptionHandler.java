@@ -36,6 +36,18 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(HttpStatus.UNAUTHORIZED, "Invalid email or password"));
     }
 
+    @ExceptionHandler(org.springframework.security.core.userdetails.UsernameNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFound(org.springframework.security.core.userdetails.UsernameNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(HttpStatus.UNAUTHORIZED, ex.getMessage()));
+    }
+
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new ErrorResponse(HttpStatus.FORBIDDEN, "Access denied: You do not have permission to access this resource"));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationErrors(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();

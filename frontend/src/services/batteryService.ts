@@ -4,25 +4,26 @@ import api from './api';
 export interface Battery {
   id: number;
   name: string;
-  capacityKwh: number;
-  voltage: number;
   batteryType: string;
-  currentChargeKwh: number;
-  healthRating: number;
+  capacityKwh: number;
+  availableEnergyKwh: number;
+  healthRating: number; // 0 to 100
   serialNumber: string;
-  status: 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'IN_TRANSIT';
+  imageUrl?: string;
+  status: 'AVAILABLE' | 'CHARGING' | 'RESERVED' | 'MAINTENANCE' | 'SOLD_OUT';
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface BatteryRequest {
   name: string;
-  capacityKwh: number;
-  voltage: number;
   batteryType: string;
-  currentChargeKwh: number;
+  capacityKwh: number;
+  availableEnergyKwh: number;
   healthRating: number;
   serialNumber: string;
+  imageUrl?: string;
+  status?: string;
 }
 
 const batteryService = {

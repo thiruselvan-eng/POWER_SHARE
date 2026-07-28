@@ -34,3 +34,9 @@ server:
   port: ${PORT:8085}
   error:
     include-message: always
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:demo}
+  api-key: ${CLOUDINARY_API_KEY:1234567890}
+  api-secret: ${CLOUDINARY_API_SECRET:abcdefghijklmnopqrstuvwxyz}
+

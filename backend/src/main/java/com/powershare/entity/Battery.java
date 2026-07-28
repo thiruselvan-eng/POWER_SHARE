@@ -32,25 +32,24 @@ public class Battery {
     @Column(name = "capacity_kwh", nullable = false)
     private Double capacityKwh;
 
-    @NotNull
-    @Column(nullable = false)
-    private Double voltage;
-
     @NotBlank
     @Column(name = "battery_type", nullable = false)
     private String batteryType;
 
     @NotNull
-    @Column(name = "current_charge_kwh", nullable = false)
-    private Double currentChargeKwh;
+    @Column(name = "available_energy_kwh", nullable = false)
+    private Double availableEnergyKwh;
 
     @NotNull
     @Column(name = "health_rating", nullable = false)
-    private Double healthRating; // Value between 0.0 and 1.0 (State of Health)
+    private Double healthRating; // 0.0 to 100.0 (percentage)
 
     @NotBlank
     @Column(name = "serial_number", unique = true, nullable = false)
     private String serialNumber;
+
+    @Column(name = "image_url")
+    private String imageUrl;
 
     @NotNull
     @Enumerated(EnumType.STRING)

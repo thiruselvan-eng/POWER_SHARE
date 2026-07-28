@@ -281,14 +281,14 @@ const AdminDashboard: React.FC = () => {
 
                     <div className="bg-slate-900/60 border border-slate-800/80 p-6 rounded-2xl">
                       <span className="text-[10px] font-extrabold text-gray-550 uppercase tracking-widest block mb-2">Platform Escrow</span>
-                      <p className="text-3xl font-bold tracking-tight text-indigo-400 font-mono">${stats.activeEscrowAmount.toFixed(2)}</p>
-                      <p className="text-xs text-gray-550 mt-1">Total financial volume: ${stats.totalFinancialThroughput.toFixed(2)}</p>
+                      <p className="text-3xl font-bold tracking-tight text-indigo-400 font-mono">₹{stats.activeEscrowAmount.toFixed(2)}</p>
+                      <p className="text-xs text-gray-550 mt-1">Total financial volume: ₹{stats.totalFinancialThroughput.toFixed(2)}</p>
                     </div>
 
                     <div className="bg-slate-900/60 border border-slate-800/80 p-6 rounded-2xl">
-                      <span className="text-[10px] font-extrabold text-gray-550 uppercase tracking-widest block mb-2">Delivery Force</span>
-                      <p className="text-3xl font-bold tracking-tight text-white">{stats.totalDeliveryPartners} active</p>
-                      <p className="text-xs text-gray-550 mt-1">Avg logistics score: 100%</p>
+                      <span className="text-[10px] font-extrabold text-gray-550 uppercase tracking-widest block mb-2">Unverified Accounts</span>
+                      <p className="text-3xl font-bold tracking-tight text-white">{stats.totalUnverifiedUsers} pending</p>
+                      <p className="text-xs text-gray-550 mt-1">Requires admin review</p>
                     </div>
 
                   </div>
@@ -534,7 +534,6 @@ const AdminDashboard: React.FC = () => {
                             
                             <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${
                               u.role === 'ROLE_SELLER' ? 'bg-emerald-500/10 text-emerald-400' : 
-                              u.role === 'ROLE_DELIVERY' ? 'bg-amber-500/10 text-amber-400' :
                               u.role === 'ROLE_ADMIN' ? 'bg-indigo-500/10 text-indigo-400' :
                               'bg-indigo-500/10 text-indigo-300'
                             }`}>
@@ -635,7 +634,7 @@ const AdminDashboard: React.FC = () => {
                 ) : (
                   <div className="space-y-4">
                     {filteredOrders.map(o => {
-                      const isActive = ['PENDING', 'ACCEPTED', 'DISPATCHED', 'RETURN_PENDING'].includes(o.status);
+                      const isActive = ['PENDING', 'ACCEPTED'].includes(o.status);
                       return (
                         <div key={o.id} className="bg-[#0b0f19]/80 border border-slate-800 p-5 rounded-2xl hover:border-slate-800 transition-colors flex flex-col xl:flex-row xl:items-center justify-between gap-5 text-xs">
                           
@@ -644,10 +643,9 @@ const AdminDashboard: React.FC = () => {
                             <div className="flex items-center gap-3">
                               <span className="font-bold text-indigo-400 font-mono">Order #{o.id}</span>
                               <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${
-                                o.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-450 border border-emerald-500/15' : 
-                                o.status === 'RETURNED' ? 'bg-orange-500/10 text-orange-450 border border-orange-500/15' :
-                                o.status === 'CANCELLED' ? 'bg-rose-500/10 text-rose-455 border border-rose-500/15' :
-                                'bg-indigo-505/10 text-indigo-400 border border-indigo-500/15'
+                                o.status === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' : 
+                                o.status === 'CANCELLED' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/15' :
+                                'bg-indigo-500/10 text-indigo-400 border border-indigo-500/15'
                               }`}>
                                 {o.status}
                               </span>

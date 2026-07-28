@@ -2,7 +2,6 @@ package com.powershare.service;
 
 import com.powershare.dto.OrderRequest;
 import com.powershare.dto.OrderResponse;
-
 import com.powershare.entity.*;
 import com.powershare.exception.BusinessException;
 import com.powershare.exception.ResourceNotFoundException;
@@ -12,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,7 +26,6 @@ public class OrderService {
     private final WalletRepository walletRepository;
     private final TransactionRepository transactionRepository;
 
-
     @Transactional
     public OrderResponse createOrder(Long buyerId, OrderRequest request) {
         User buyer = userRepository.findById(buyerId)
@@ -40,62 +39,68 @@ public class OrderService {
 
         Battery battery = listing.getBattery();
         if (battery.getStatus() != BatteryStatus.AVAILABLE) {
-            throw new BusinessException("The selected battery pack is currently " + battery.getStatus() + " and cannot be rented.");
+            throw new BusinessException("The battery is currently " + battery.getStatus() + " and unavailable for purchase.");
         }
 
-        // Proximity Radius Check & Dynamic Delivery Fee
-        Double buyerLat = request.getDeliveryLatitude() != null ? request.getDeliveryLatitude() : buyer.getLatitude();
-        Double buyerLon = request.getDeliveryLongitude() != null ? request.getDeliveryLongitude() : buyer.getLongitude();
-        Double sellerLat = listing.getSeller().getLatitude();
-        Double sellerLon = listing.getSeller().getLongitude();
+        // Validate requested energy amount against min purchase and available energy
+        Double requestedKwh = request.getEnergyAmountKwh();
+        if (requestedKwh == null || requestedKwh <= 0) {
+            throw new BusinessException("Energy amount requested must be greater than 0 kWh.");
+        }
+        if (listing.getMinPurchaseKwh() != null && requestedKwh < listing.getMinPurchaseKwh()) {
+            throw new BusinessException("Requested amount (" + requestedKwh + " kWh) is below seller's minimum purchase of " + listing.getMinPurchaseKwh() + " kWh.");
+        }
+        if (requestedKwh > battery.getAvailableEnergyKwh()) {
+            throw new BusinessException("Requested amount (" + requestedKwh + " kWh) exceeds available battery energy of " + battery.getAvailableEnergyKwh() + " kWh.");
+        }
 
-        double distanceKm = 0;
-        double deliveryFeeDouble = 5.00; // Default flat fee
+        // Delivery check & fee calculation
+        Double buyerLat = request.getBuyerLatitude() != null ? request.getBuyerLatitude() : buyer.getLatitude();
+        Double buyerLon = request.getBuyerLongitude() != null ? request.getBuyerLongitude() : buyer.getLongitude();
+        Double sellerLat = listing.getSellerLatitude();
+        Double sellerLon = listing.getSellerLongitude();
 
-        if (buyerLat != null && buyerLon != null && sellerLat != null && sellerLon != null) {
-            distanceKm = calculateDistance(sellerLat, sellerLon, buyerLat, buyerLon);
-            if (distanceKm > listing.getDeliveryRadiusKm()) {
-                throw new BusinessException("Your delivery location is outside the seller's " + 
-                        listing.getDeliveryRadiusKm() + " km service radius (Calculated: " + 
-                        String.format("%.1f", distanceKm) + " km away).");
+        BigDecimal deliveryFee = BigDecimal.ZERO;
+        if (request.isDeliveryRequired()) {
+            if (!listing.isDeliveryAvailable()) {
+                throw new BusinessException("Seller does not offer delivery for this listing. Pickup required.");
             }
-            deliveryFeeDouble = 2.00 + (distanceKm * 0.50); // $2.00 base + $0.50/km
+            if (buyerLat != null && buyerLon != null && sellerLat != null && sellerLon != null) {
+                double distanceKm = calculateDistance(sellerLat, sellerLon, buyerLat, buyerLon);
+                if (listing.getMaxDeliveryDistanceKm() != null && listing.getMaxDeliveryDistanceKm() > 0 && distanceKm > listing.getMaxDeliveryDistanceKm()) {
+                    throw new BusinessException("Your location is " + String.format("%.1f", distanceKm) + " km away, which exceeds the seller's max delivery distance of " + listing.getMaxDeliveryDistanceKm() + " km.");
+                }
+                if (listing.getDeliveryChargePerKm() != null) {
+                    deliveryFee = listing.getDeliveryChargePerKm().multiply(BigDecimal.valueOf(distanceKm)).setScale(2, RoundingMode.HALF_UP);
+                }
+            }
         }
 
         BigDecimal pricePerKwh = listing.getPricePerKwh();
-        BigDecimal energyAmount = BigDecimal.valueOf(battery.getCurrentChargeKwh());
-        BigDecimal deliveryFee = BigDecimal.valueOf(deliveryFeeDouble).setScale(2, java.math.RoundingMode.HALF_UP);
-        BigDecimal energyCost = pricePerKwh.multiply(energyAmount);
-        BigDecimal totalAmount = energyCost.add(deliveryFee).setScale(2, java.math.RoundingMode.HALF_UP);
+        BigDecimal energyCost = pricePerKwh.multiply(BigDecimal.valueOf(requestedKwh));
+        BigDecimal totalAmount = energyCost.add(deliveryFee).setScale(2, RoundingMode.HALF_UP);
 
-        // Balance Check
+        // Balance Check & Escrow lock
         Wallet buyerWallet = walletRepository.findByUserId(buyerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Buyer wallet not found"));
 
         if (buyerWallet.getBalance().compareTo(totalAmount) < 0) {
-            throw new BusinessException("Insufficient wallet funds. Total cost: $" + totalAmount + 
-                    ", but your balance is only $" + buyerWallet.getBalance() + ". Please top up first.");
+            throw new BusinessException("Insufficient wallet funds. Total required: ₹" + totalAmount +
+                    ", but your balance is ₹" + buyerWallet.getBalance() + ". Please deposit funds first.");
         }
 
-        // Debit buyer
+        // Debit buyer balance
         buyerWallet.setBalance(buyerWallet.getBalance().subtract(totalAmount));
         walletRepository.save(buyerWallet);
 
-        // Record Buyer Transaction
+        // Record Buyer Escrow Debit Transaction
         Transaction debitTx = Transaction.builder()
                 .wallet(buyerWallet)
                 .amount(totalAmount)
                 .transactionType(TransactionType.DEBIT)
-                .description("Paid for Order of " + battery.getName() + " (Escrow lock)")
+                .description("Escrow locked for energy order of " + battery.getName() + " (" + requestedKwh + " kWh)")
                 .build();
         transactionRepository.save(debitTx);
-
-        // Update status of battery & delist
-        battery.setStatus(BatteryStatus.IN_TRANSIT);
-        batteryRepository.save(battery);
-
-        listing.setActive(false);
-        energyListingRepository.save(listing);
 
         // Save order
         Order order = Order.builder()
@@ -104,12 +109,16 @@ public class OrderService {
                 .battery(battery)
                 .listing(listing)
                 .pricePerKwh(pricePerKwh)
-                .energyAmountKwh(battery.getCurrentChargeKwh())
+                .energyAmountKwh(requestedKwh)
                 .deliveryFee(deliveryFee)
                 .totalAmount(totalAmount)
-                .deliveryAddress(request.getDeliveryAddress())
-                .deliveryLatitude(buyerLat)
-                .deliveryLongitude(buyerLon)
+                .deliveryRequired(request.isDeliveryRequired())
+                .buyerAddress(request.getBuyerAddress())
+                .buyerLatitude(buyerLat)
+                .buyerLongitude(buyerLon)
+                .sellerAddressSnapshot(listing.getSellerAddress())
+                .sellerLatitudeSnapshot(sellerLat)
+                .sellerLongitudeSnapshot(sellerLon)
                 .status(OrderStatus.PENDING)
                 .build();
 
@@ -133,7 +142,7 @@ public class OrderService {
 
     @Transactional
     public OrderResponse updateStatus(Long userId, Long orderId, OrderStatus newStatus, boolean isSellerUser) {
-        Order order = isSellerUser 
+        Order order = isSellerUser
                 ? orderRepository.findByIdAndSellerId(orderId, userId)
                     .orElseThrow(() -> new ResourceNotFoundException("Order not found for this seller"))
                 : orderRepository.findByIdAndBuyerId(orderId, userId)
@@ -142,18 +151,17 @@ public class OrderService {
         OrderStatus currentStatus = order.getStatus();
 
         if (currentStatus == OrderStatus.CANCELLED) {
-            throw new BusinessException("Cannot change status: Order is already closed as CANCELLED");
+            throw new BusinessException("Cannot update order: it is already CANCELLED.");
+        }
+        if (currentStatus == OrderStatus.COMPLETED) {
+            throw new BusinessException("Cannot update order: it is already COMPLETED.");
         }
 
-        if (currentStatus == OrderStatus.COMPLETED && newStatus != OrderStatus.RETURN_PENDING) {
-            throw new BusinessException("Cannot change status: Order is already COMPLETED. Only return requests can be initiated.");
-        }
-
-        // Logic check: if cancelled, refund the buyer and release battery
+        // Logic check: if CANCELLED, refund the buyer
         if (newStatus == OrderStatus.CANCELLED) {
             Wallet buyerWallet = walletRepository.findByUserId(order.getBuyer().getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Buyer wallet not found"));
-            
+
             buyerWallet.setBalance(buyerWallet.getBalance().add(order.getTotalAmount()));
             walletRepository.save(buyerWallet);
 
@@ -161,20 +169,12 @@ public class OrderService {
                     .wallet(buyerWallet)
                     .amount(order.getTotalAmount())
                     .transactionType(TransactionType.CREDIT)
-                    .description("Refund for cancelled Order #" + order.getId())
+                    .description("Full refund for cancelled Order #" + order.getId())
                     .build();
             transactionRepository.save(refundTx);
-
-            Battery battery = order.getBattery();
-            battery.setStatus(BatteryStatus.AVAILABLE);
-            batteryRepository.save(battery);
-
-            EnergyListing listing = order.getListing();
-            listing.setActive(true);
-            energyListingRepository.save(listing);
         }
 
-        // Logic check: if completed, release funds to the seller
+        // Logic check: if COMPLETED, release escrow funds to seller & update battery available energy
         if (newStatus == OrderStatus.COMPLETED) {
             Wallet sellerWallet = walletRepository.findByUserId(order.getSeller().getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Seller wallet not found"));
@@ -186,19 +186,17 @@ public class OrderService {
                     .wallet(sellerWallet)
                     .amount(order.getTotalAmount())
                     .transactionType(TransactionType.CREDIT)
-                    .description("Received escrow earnings for Order #" + order.getId())
+                    .description("Escrow payout received for Order #" + order.getId())
                     .build();
             transactionRepository.save(earnTx);
 
+            // Deduct purchased energy from battery
             Battery battery = order.getBattery();
-            battery.setStatus(BatteryStatus.RENTED);
-            batteryRepository.save(battery);
-        }
-
-        // Logic check: if returned, set battery status back to AVAILABLE
-        if (newStatus == OrderStatus.RETURNED) {
-            Battery battery = order.getBattery();
-            battery.setStatus(BatteryStatus.AVAILABLE);
+            double remainingEnergy = Math.max(0.0, battery.getAvailableEnergyKwh() - order.getEnergyAmountKwh());
+            battery.setAvailableEnergyKwh(remainingEnergy);
+            if (remainingEnergy == 0.0) {
+                battery.setStatus(BatteryStatus.SOLD_OUT);
+            }
             batteryRepository.save(battery);
         }
 
@@ -208,7 +206,7 @@ public class OrderService {
     }
 
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-        final int R = 6371; // Radious of the earth in km
+        final int R = 6371; // Radius of earth in km
         double latDistance = Math.toRadians(lat2 - lat1);
         double lonDistance = Math.toRadians(lon2 - lon1);
         double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
@@ -218,28 +216,28 @@ public class OrderService {
         return R * c;
     }
 
-    private OrderResponse toResponse(Order order) {
+    public OrderResponse toResponse(Order order) {
         return OrderResponse.builder()
                 .id(order.getId())
                 .buyerId(order.getBuyer().getId())
                 .buyerName(order.getBuyer().getFullName())
-                .buyerPhone(order.getBuyer().getPhone())
                 .sellerId(order.getSeller().getId())
                 .sellerName(order.getSeller().getFullName())
-                .sellerPhone(order.getSeller().getPhone())
                 .batteryId(order.getBattery().getId())
                 .batteryName(order.getBattery().getName())
+                .batteryType(order.getBattery().getBatteryType())
                 .serialNumber(order.getBattery().getSerialNumber())
-                .listingId(order.getListing().getId())
                 .pricePerKwh(order.getPricePerKwh())
                 .energyAmountKwh(order.getEnergyAmountKwh())
                 .deliveryFee(order.getDeliveryFee())
                 .totalAmount(order.getTotalAmount())
-                .deliveryAddress(order.getDeliveryAddress())
-                .deliveryLatitude(order.getDeliveryLatitude())
-                .deliveryLongitude(order.getDeliveryLongitude())
-                .sellerLatitude(order.getSeller().getLatitude())
-                .sellerLongitude(order.getSeller().getLongitude())
+                .deliveryRequired(order.isDeliveryRequired())
+                .buyerAddress(order.getBuyerAddress())
+                .buyerLatitude(order.getBuyerLatitude())
+                .buyerLongitude(order.getBuyerLongitude())
+                .sellerAddressSnapshot(order.getSellerAddressSnapshot())
+                .sellerLatitudeSnapshot(order.getSellerLatitudeSnapshot())
+                .sellerLongitudeSnapshot(order.getSellerLongitudeSnapshot())
                 .status(order.getStatus())
                 .createdAt(order.getCreatedAt())
                 .updatedAt(order.getUpdatedAt())

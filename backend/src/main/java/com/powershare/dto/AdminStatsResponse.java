@@ -14,7 +14,6 @@ import java.math.BigDecimal;
 public class AdminStatsResponse {
     private long totalSellers;
     private long totalBuyers;
-    private long totalDeliveryPartners;
     private long totalUnverifiedUsers;
     private double totalEnergyTransferredKwh;
     private BigDecimal totalFinancialThroughput;

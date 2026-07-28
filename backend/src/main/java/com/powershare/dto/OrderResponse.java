@@ -13,33 +13,37 @@ import java.time.LocalDateTime;
 @Builder
 public class OrderResponse {
     private Long id;
-    
+
+    // Parties
     private Long buyerId;
     private String buyerName;
-    private String buyerPhone;
-
     private Long sellerId;
     private String sellerName;
-    private String sellerPhone;
 
+    // Battery
     private Long batteryId;
     private String batteryName;
+    private String batteryType;
     private String serialNumber;
-    
-    private Long listingId;
+
+    // Energy & Pricing
     private BigDecimal pricePerKwh;
     private Double energyAmountKwh;
     private BigDecimal deliveryFee;
     private BigDecimal totalAmount;
 
-    private String deliveryAddress;
-    private Double deliveryLatitude;
-    private Double deliveryLongitude;
+    // Delivery info
+    private boolean deliveryRequired;
+    private String buyerAddress;
+    private Double buyerLatitude;
+    private Double buyerLongitude;
+    private String sellerAddressSnapshot;
+    private Double sellerLatitudeSnapshot;
+    private Double sellerLongitudeSnapshot;
 
-    private Double sellerLatitude;
-    private Double sellerLongitude;
-    
+    // Status
     private OrderStatus status;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

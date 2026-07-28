@@ -29,7 +29,7 @@ import java.util.List;
 /**
  * Spring Security configuration:
  * - Stateless JWT sessions
- * - Role-based endpoint protection
+ * - Role-based endpoint protection (Seller, Buyer, Admin)
  * - CORS configured for Vercel frontend and local dev origins
  * - BCrypt password encoding
  */
@@ -42,13 +42,6 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserDetailsService userDetailsService;
 
-    // ----------------------------------------------------------------
-    // CORS: registered as a top-priority filter so it runs BEFORE
-    // Spring Security and therefore before the JWT filter. This
-    // guarantees that preflight (OPTIONS) responses always carry the
-    // correct Access-Control-* headers even when the request itself
-    // would otherwise be rejected by the security chain.
-    // ----------------------------------------------------------------
     @Bean
     public CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -63,14 +56,9 @@ public class SecurityConfig {
         return source;
     }
 
-    /**
-     * Single source-of-truth for CORS rules shared by both the
-     * CorsFilter bean and the Spring Security CORS integration.
-     */
     private CorsConfiguration corsConfiguration() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Explicit, exact-match origins (required when allowCredentials = true)
         config.setAllowedOriginPatterns(Arrays.asList(
             "https://power-share-six.vercel.app",   // Production Vercel frontend
             "https://*.vercel.app",                  // All Vercel preview deployments
@@ -83,16 +71,9 @@ public class SecurityConfig {
             "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
         ));
 
-        // Allow all request headers (Authorization, Content-Type, etc.)
         config.setAllowedHeaders(List.of("*"));
-
-        // Expose the Authorization header so the browser can read the JWT
         config.setExposedHeaders(Arrays.asList("Authorization", "Content-Disposition"));
-
-        // Must be true for cookies / Authorization header to be forwarded
         config.setAllowCredentials(true);
-
-        // Cache preflight response for 1 hour to reduce OPTIONS round-trips
         config.setMaxAge(3600L);
 
         return config;
@@ -102,15 +83,10 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
-            // Wire Spring Security's CORS support to the same config source
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(session ->
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Allow all OPTIONS preflight requests without authentication.
-                // This is the critical line that was missing: Spring Security
-                // was intercepting OPTIONS requests before CORS headers could
-                // be added, causing the browser to reject the preflight.
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                 // Public endpoints
@@ -121,10 +97,8 @@ public class SecurityConfig {
                 // Role-protected endpoints
                 .requestMatchers("/api/seller/**").hasAuthority("ROLE_SELLER")
                 .requestMatchers("/api/buyer/**").hasAuthority("ROLE_BUYER")
-                .requestMatchers("/api/delivery/**").hasAuthority("ROLE_DELIVERY")
                 .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
 
-                // Everything else needs authentication
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())

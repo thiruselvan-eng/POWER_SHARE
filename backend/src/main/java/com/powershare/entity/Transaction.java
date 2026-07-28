@@ -33,9 +33,8 @@ public class Transaction {
     @Column(name = "reference_id")
     private Long referenceId;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "reference_type")
-    private ReferenceType referenceType;
+    private String referenceType;
 
     private String description;
 

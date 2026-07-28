@@ -14,7 +14,6 @@ import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import BuyerDashboard from './pages/buyer/BuyerDashboard';
 import SellerDashboard from './pages/seller/SellerDashboard';
-import DeliveryDashboard from './pages/delivery/DeliveryDashboard';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import './App.css';
 
@@ -30,8 +29,9 @@ const GuestRoute = ({ children }: { children: React.ReactNode }) => {
   const role = JSON.parse(localStorage.getItem('ps_user') || '{}')?.role;
   if (isAuthenticated) {
     const map: Record<string, string> = {
-      ROLE_BUYER: '/buyer', ROLE_SELLER: '/seller',
-      ROLE_DELIVERY: '/delivery', ROLE_ADMIN: '/admin',
+      ROLE_BUYER: '/buyer',
+      ROLE_SELLER: '/seller',
+      ROLE_ADMIN: '/admin',
     };
     return <Navigate to={map[role] || '/'} replace />;
   }
@@ -59,13 +59,6 @@ const AppRoutes = () => (
     <Route path="/seller/*" element={
       <ProtectedRoute allowedRoles={['ROLE_SELLER']}>
         <SellerDashboard />
-      </ProtectedRoute>
-    } />
-
-    {/* Protected — Delivery */}
-    <Route path="/delivery/*" element={
-      <ProtectedRoute allowedRoles={['ROLE_DELIVERY']}>
-        <DeliveryDashboard />
       </ProtectedRoute>
     } />
 

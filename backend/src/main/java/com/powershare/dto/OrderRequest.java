@@ -1,6 +1,5 @@
 package com.powershare.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
@@ -14,10 +13,12 @@ public class OrderRequest {
     @NotNull(message = "Listing ID is required.")
     private Long listingId;
 
-    @NotBlank(message = "Delivery address is required.")
-    private String deliveryAddress;
+    @NotNull(message = "Energy amount in kWh is required.")
+    private Double energyAmountKwh;
 
-    private Double deliveryLatitude;
+    private boolean deliveryRequired;
 
-    private Double deliveryLongitude;
+    private String buyerAddress;
+    private Double buyerLatitude;
+    private Double buyerLongitude;
 }

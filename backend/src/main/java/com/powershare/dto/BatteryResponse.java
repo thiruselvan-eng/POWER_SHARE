@@ -13,12 +13,12 @@ import java.time.LocalDateTime;
 public class BatteryResponse {
     private Long id;
     private String name;
-    private Double capacityKwh;
-    private Double voltage;
     private String batteryType;
-    private Double currentChargeKwh;
-    private Double healthRating;
+    private Double capacityKwh;
+    private Double availableEnergyKwh;
+    private Double healthRating; // 0.0 to 100.0
     private String serialNumber;
+    private String imageUrl;
     private BatteryStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -2,10 +2,13 @@ package com.powershare.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
@@ -15,6 +18,8 @@ import java.util.Date;
 @Component
 public class JwtTokenProvider {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtTokenProvider.class);
+
     @Value("${app.jwt.secret}")
     private String jwtSecret;
 
@@ -22,7 +27,7 @@ public class JwtTokenProvider {
     private long jwtExpirationMs;
 
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -48,11 +53,16 @@ public class JwtTokenProvider {
      * Validate a JWT token against the stored user details.
      */
     public boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+        try {
+            final String username = extractUsername(token);
+            return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+        } catch (JwtException | IllegalArgumentException e) {
+            log.warn("JWT token validation failed: {}", e.getMessage());
+            return false;
+        }
     }
 
-    private boolean isTokenExpired(String token) {
+    public boolean isTokenExpired(String token) {
         return parseClaims(token).getExpiration().before(new Date());
     }
 

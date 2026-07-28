@@ -36,6 +36,7 @@ public class Order {
     @JoinColumn(name = "listing_id", nullable = false)
     private EnergyListing listing;
 
+    // ── Energy & Pricing ──────────────────────────────────────────────────────
     @NotNull
     @Column(name = "price_per_kwh", nullable = false, precision = 10, scale = 2)
     private BigDecimal pricePerKwh;
@@ -46,21 +47,38 @@ public class Order {
 
     @NotNull
     @Column(name = "delivery_fee", nullable = false, precision = 10, scale = 2)
-    private BigDecimal deliveryFee;
+    @Builder.Default
+    private BigDecimal deliveryFee = BigDecimal.ZERO;
 
     @NotNull
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
 
-    @Column(name = "delivery_address")
-    private String deliveryAddress;
+    // ── Delivery Info ─────────────────────────────────────────────────────────
+    @Column(name = "delivery_required", nullable = false)
+    @Builder.Default
+    private boolean deliveryRequired = false;
 
-    @Column(name = "delivery_latitude")
-    private Double deliveryLatitude;
+    @Column(name = "buyer_address", columnDefinition = "TEXT")
+    private String buyerAddress;
 
-    @Column(name = "delivery_longitude")
-    private Double deliveryLongitude;
+    @Column(name = "buyer_latitude")
+    private Double buyerLatitude;
 
+    @Column(name = "buyer_longitude")
+    private Double buyerLongitude;
+
+    // Snapshot of seller location at order time
+    @Column(name = "seller_address_snapshot", columnDefinition = "TEXT")
+    private String sellerAddressSnapshot;
+
+    @Column(name = "seller_latitude_snapshot")
+    private Double sellerLatitudeSnapshot;
+
+    @Column(name = "seller_longitude_snapshot")
+    private Double sellerLongitudeSnapshot;
+
+    // ── Status ────────────────────────────────────────────────────────────────
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
